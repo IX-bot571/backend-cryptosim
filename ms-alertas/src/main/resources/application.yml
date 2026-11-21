@@ -81,6 +81,10 @@ app:
         min-insync-replicas: 2
         retencion-ms: 604800000          # 7 días
         cleanup-policy: delete
+  demo:
+    fallo-transitorio:                 # gancho de prueba para mostrar reintentos (vacío = desactivado)
+      simbolo: ""
+      veces: 0
   # Misma lista que ms-precios (ver CONTRATO.md)
   catalogo:
     - { simbolo: BTC,    nombre: Bitcoin }

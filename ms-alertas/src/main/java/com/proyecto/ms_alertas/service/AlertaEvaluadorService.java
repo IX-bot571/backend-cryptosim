@@ -26,16 +26,19 @@ public class AlertaEvaluadorService {
 
     private final AlertaRepository repository;
     private final AlertaDisparadaPublisher publisher;
+    private final FalloTransitorioSimulado falloSimulado;
     private final Map<TipoAlerta, ReglaAlerta> reglas = new EnumMap<>(TipoAlerta.class);
 
     public AlertaEvaluadorService(AlertaRepository repository, AlertaDisparadaPublisher publisher,
-                                  List<ReglaAlerta> reglas) {
+                                  FalloTransitorioSimulado falloSimulado, List<ReglaAlerta> reglas) {
         this.repository = repository;
         this.publisher = publisher;
+        this.falloSimulado = falloSimulado;
         reglas.forEach(r -> this.reglas.put(r.tipo(), r));
     }
 
     public void evaluar(PrecioEvent precio) {
+        falloSimulado.quizasFallar(precio.simbolo());
         for (Alerta alerta : repository.findBySimboloAndEstado(precio.simbolo(), EstadoAlerta.ACTIVA)) {
             ReglaAlerta regla = reglas.get(alerta.getTipo());
             if (regla == null) {
