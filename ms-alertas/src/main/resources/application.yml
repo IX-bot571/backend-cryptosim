@@ -1,0 +1,82 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: ms-alertas
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/realms/cloudnative
+  datasource:
+    url: jdbc:postgresql://ep-little-sky-b6nqrqkw-pooler.c-2.sa-east-1.aws.neon.tech/neondb?sslmode=require
+    username: neondb_owner
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+  kafka:
+    bootstrap-servers: localhost:9092,localhost:9093,localhost:9094
+    client-id: ms-alertas
+    admin:
+      modify-topic-configs: true
+    consumer:
+      auto-offset-reset: latest           # no evaluar precios viejos al arrancar un grupo nuevo
+      enable-auto-commit: false           # el contenedor confirma el offset tras procesar cada registro
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+        spring.json.trusted.packages: com.proyecto.ms_alertas.dto
+        spring.json.use.type.headers: false
+        spring.json.value.default.type: com.proyecto.ms_alertas.dto.PrecioEvent
+    listener:
+      ack-mode: record
+    producer:
+      acks: all
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+        linger.ms: 5
+        delivery.timeout.ms: 30000
+        request.timeout.ms: 10000
+        max.block.ms: 5000
+        spring.json.add.type.headers: false
+
+app:
+  rabbit:
+    exchange: tareas.exchange
+    notificacion-routing-key: notificacion.enviar
+  kafka:
+    groups:
+      alertas: alertas-group
+    topics:
+      precios:
+        nombre: precios.actualizados     # lo declara ms-precios (dueño); aquí solo se consume
+      alertas-disparadas:
+        nombre: alertas.disparadas
+        particiones: 2
+        replicas: 3
+        min-insync-replicas: 2
+        retencion-ms: 604800000          # 7 días
+        cleanup-policy: delete
+  # Misma lista que ms-precios (ver CONTRATO.md)
+  catalogo:
+    - { simbolo: BTC,    nombre: Bitcoin }
+    - { simbolo: ETH,    nombre: Ethereum }
+    - { simbolo: BNB,    nombre: BNB }
+    - { simbolo: SOL,    nombre: Solana }
+    - { simbolo: XRP,    nombre: XRP }
+    - { simbolo: ADA,    nombre: Cardano }
+    - { simbolo: DOGE,   nombre: Dogecoin }
+    - { simbolo: NEAR,   nombre: NEAR Protocol }
+    - { simbolo: RENDER, nombre: Render }
+    - { simbolo: THETA,  nombre: Theta Network }

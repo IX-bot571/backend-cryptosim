@@ -1,0 +1,30 @@
+package com.proyecto.ms_alertas.config;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
+
+import java.util.List;
+
+/** Catálogo y nombres de Kafka (tópicos, grupos) leídos de application.yml. Ninguna clase los escribe a mano. */
+@Validated
+@ConfigurationProperties(prefix = "app")
+public record AppProperties(@NotEmpty List<@Valid Cripto> catalogo, @NotNull @Valid Kafka kafka) {
+
+    public record Cripto(@NotBlank String simbolo, @NotBlank String nombre) {}
+
+    public record Kafka(@NotNull @Valid Groups groups, @NotNull @Valid Topics topics) {}
+
+    public record Groups(@NotBlank String alertas) {}
+
+    public record Topics(@NotNull @Valid TopicoConsumido precios, @NotNull @Valid Topico alertasDisparadas) {}
+
+    public record TopicoConsumido(@NotBlank String nombre) {}
+
+    public record Topico(@NotBlank String nombre, @Positive int particiones, @Positive int replicas,
+                         @Positive int minInsyncReplicas, @Positive long retencionMs, @NotBlank String cleanupPolicy) {}
+}
