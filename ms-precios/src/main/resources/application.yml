@@ -1,0 +1,66 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: ms-precios
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/realms/cloudnative
+  kafka:
+    bootstrap-servers: localhost:9092,localhost:9093,localhost:9094
+    client-id: ms-precios
+    admin:
+      modify-topic-configs: true        # si el tópico ya existe, alinea sus configs con KafkaTopicConfig
+    producer:
+      acks: all                         # espera a todas las réplicas en sincronía (min.insync=2)
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+      compression-type: lz4
+      properties:
+        enable.idempotence: true        # sin duplicados por reintentos del productor
+        max.in.flight.requests.per.connection: 5
+        linger.ms: 10                   # agrupa los 10 eventos de cada ciclo en pocos batches
+        request.timeout.ms: 10000
+        delivery.timeout.ms: 30000
+        max.block.ms: 5000              # si Kafka no responde, no bloquear el scheduler 60 s
+        spring.json.add.type.headers: false   # el consumidor usa su propio record, no la clase de este servicio
+
+app:
+  kafka:
+    topics:
+      precios:
+        nombre: precios.actualizados
+        particiones: 3
+        replicas: 3
+        min-insync-replicas: 2
+        retencion-ms: 86400000          # 24 h: permite reconstruir ventanas de tiempo
+        cleanup-policy: delete
+  precios:
+    modo: binance-con-respaldo          # binance | simulado | binance-con-respaldo
+    intervalo-ms: 5000
+    volatilidad-pct: 0.15               # desviación por tick del simulador (subir para forzar cruces en la demo)
+  historial:
+    max-puntos: 1440
+  binance:
+    url: https://data-api.binance.vision
+    connect-timeout: 2s
+    read-timeout: 3s
+  # precio-base: punto de partida del simulador si Binance no responde al arrancar (valores de nov-2026)
+  catalogo:
+    - { simbolo: BTC,    nombre: Bitcoin,        par: BTCUSDT,    precio-base: 60000 }
+    - { simbolo: ETH,    nombre: Ethereum,       par: ETHUSDT,    precio-base: 1700 }
+    - { simbolo: BNB,    nombre: BNB,            par: BNBUSDT,    precio-base: 550 }
+    - { simbolo: SOL,    nombre: Solana,         par: SOLUSDT,    precio-base: 70 }
+    - { simbolo: XRP,    nombre: XRP,            par: XRPUSDT,    precio-base: 0.93 }
+    - { simbolo: ADA,    nombre: Cardano,        par: ADAUSDT,    precio-base: 0.145 }
+    - { simbolo: DOGE,   nombre: Dogecoin,       par: DOGEUSDT,   precio-base: 0.055 }
+    - { simbolo: NEAR,   nombre: NEAR Protocol,  par: NEARUSDT,   precio-base: 2.9 }
+    - { simbolo: RENDER, nombre: Render,         par: RENDERUSDT, precio-base: 1.3 }
+    - { simbolo: THETA,  nombre: Theta Network,  par: THETAUSDT,  precio-base: 0.127 }
+
+logging:
+  level:
+    com.proyecto.ms_precios.producer: DEBUG
