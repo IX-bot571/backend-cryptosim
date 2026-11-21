@@ -58,9 +58,22 @@ app:
   kafka:
     groups:
       alertas: alertas-group
+      alertas-dlt: alertas-dlt-group       # consumidor que registra en el log lo que llega al DLT
+    reintentos:                          # DefaultErrorHandler: 3 reintentos con 1 s, 2 s, 4 s
+      max-reintentos: 3
+      intervalo-inicial-ms: 1000
+      multiplicador: 2.0
+      intervalo-maximo-ms: 4000
     topics:
       precios:
         nombre: precios.actualizados     # lo declara ms-precios (dueño); aquí solo se consume
+      precios-dlt:
+        nombre: precios.actualizados.DLT # lo declara este servicio, que es donde vive el error handler
+        particiones: 1
+        replicas: 3
+        min-insync-replicas: 2
+        retencion-ms: 604800000
+        cleanup-policy: delete
       alertas-disparadas:
         nombre: alertas.disparadas
         particiones: 2

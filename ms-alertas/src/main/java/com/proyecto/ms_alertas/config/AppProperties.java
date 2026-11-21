@@ -17,11 +17,16 @@ public record AppProperties(@NotEmpty List<@Valid Cripto> catalogo, @NotNull @Va
 
     public record Cripto(@NotBlank String simbolo, @NotBlank String nombre) {}
 
-    public record Kafka(@NotNull @Valid Groups groups, @NotNull @Valid Topics topics) {}
+    public record Kafka(@NotNull @Valid Groups groups, @NotNull @Valid Topics topics,
+                        @NotNull @Valid Reintentos reintentos) {}
 
-    public record Groups(@NotBlank String alertas) {}
+    public record Groups(@NotBlank String alertas, @NotBlank String alertasDlt) {}
 
-    public record Topics(@NotNull @Valid TopicoConsumido precios, @NotNull @Valid Topico alertasDisparadas) {}
+    public record Topics(@NotNull @Valid TopicoConsumido precios, @NotNull @Valid Topico preciosDlt,
+                         @NotNull @Valid Topico alertasDisparadas) {}
+
+    public record Reintentos(@Positive int maxReintentos, @Positive long intervaloInicialMs,
+                             @Positive double multiplicador, @Positive long intervaloMaximoMs) {}
 
     public record TopicoConsumido(@NotBlank String nombre) {}
 
