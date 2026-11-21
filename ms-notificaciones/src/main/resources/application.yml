@@ -13,6 +13,31 @@ spring:
       simple:
         acknowledge-mode: manual
         default-requeue-rejected: false
+  kafka:
+    bootstrap-servers: localhost:9092,localhost:9093,localhost:9094
+    client-id: ms-notificaciones
+    admin:
+      modify-topic-configs: true
+    consumer:
+      auto-offset-reset: earliest         # un grupo nuevo procesa también las alertas ya disparadas
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+        spring.json.trusted.packages: com.proyecto.ms_notificaciones.dto
+        spring.json.use.type.headers: false
+        spring.json.value.default.type: com.proyecto.ms_notificaciones.dto.AlertaDisparadaEvent
+    listener:
+      ack-mode: record
+    producer:                             # solo lo usa el DeadLetterPublishingRecoverer
+      acks: all
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JacksonJsonSerializer
+      properties:
+        enable.idempotence: true
+        max.block.ms: 5000
+        spring.json.add.type.headers: false
 
 app:
   rabbit:
@@ -31,3 +56,22 @@ app:
     documentos-binding: documento.*
     documentos-dlq: documentos.dlq
     documentos-dlq-routing-key: documento.fallido
+  kafka:
+    groups:
+      notificaciones: notificaciones-group
+      notificaciones-dlt: notificaciones-dlt-group
+    reintentos:                          # 3 reintentos con 1 s, 2 s, 4 s
+      max-reintentos: 3
+      intervalo-inicial-ms: 1000
+      multiplicador: 2.0
+      intervalo-maximo-ms: 4000
+    topics:
+      alertas-disparadas:
+        nombre: alertas.disparadas       # lo declara ms-alertas (dueño); aquí solo se consume
+      alertas-disparadas-dlt:
+        nombre: alertas.disparadas.DLT   # lo declara este servicio, donde vive el error handler
+        particiones: 1
+        replicas: 3
+        min-insync-replicas: 2
+        retencion-ms: 604800000
+        cleanup-policy: delete
