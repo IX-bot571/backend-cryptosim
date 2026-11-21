@@ -1,0 +1,9 @@
+target/
+.idea/
+*.iml
+.vscode/
+application-local.yml
+node_modules/
+dist/
+.angular/
+.env
