@@ -1,0 +1,23 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: ms-admin-kafka
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/realms/cloudnative
+  kafka:
+    bootstrap-servers: localhost:9092,localhost:9093,localhost:9094
+    client-id: ms-admin-kafka
+    admin:
+      fail-fast: false
+      properties:
+        request.timeout.ms: 10000
+        default.api.timeout.ms: 15000
+
+app:
+  admin:
+    timeout-segundos: 15        # espera máxima de cada operación del AdminClient
