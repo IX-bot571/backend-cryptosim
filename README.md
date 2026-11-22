@@ -27,6 +27,14 @@ Contrato completo (tópicos, DTOs, colas, endpoints): [CONTRATO.md](CONTRATO.md)
 - Node 22+ y npm (para el frontend).
 - La contraseña de la base de datos Neon (la entrega el autor; no está en Git).
 
+## Atajo: levantar y detener todo con un comando
+Con el archivo de secretos del paso 2 creado y el frontend en `../frontend-cryptosim`:
+```bash
+./levantar.sh            # infra + servicios + frontend (--simulado, --sin-compilar, --sin-frontend; --help)
+./detener.sh             # apaga todo, incluida la infra (--dejar-infra para mantenerla)
+```
+Estado del proyecto y verificaciones: [docs/ESTADO.md](docs/ESTADO.md). Los pasos manuales siguen abajo.
+
 ## 1. Infraestructura
 ```bash
 docker network create cryptosim-net        # una sola vez
