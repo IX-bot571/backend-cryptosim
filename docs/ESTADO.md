@@ -1,6 +1,6 @@
 # Estado del proyecto — CryptoSim
 
-Actualizado: **sábado 21-nov-2026**. Entrega: jueves 26-nov-2026, 08:30.
+Actualizado: **domingo 22-nov-2026**. Entrega: jueves 26-nov-2026, 08:30.
 
 **Resumen:** el MVP (etapas 1 a 8) y los 3 extras de la especificación están completos y con commit en ambos repos.
 Todo se probó ejecutándolo. Lo pendiente es menor y está en la sección 3.
@@ -48,6 +48,8 @@ Todo se comprobó **ejecutándolo** contra la infraestructura real (no solo comp
 | Frontend | `ng build` sin errores ni avisos; capturas con Chrome headless (login real) de Mercado, Mis alertas y Admin; prueba del usuario en su navegador (etapa 7) | Sin errores en consola; tooltip del comparador funciona |
 | Pruebas automáticas | `./mvnw test` en los 5 servicios (ms-alertas con `-Dspring.profiles.active=local`) | 20 tests, 0 fallos (16 en ms-alertas: 15 de reglas + contextLoads) |
 | Clon limpio (etapa 8) | Clonar ambos repos en una carpeta nueva y seguir solo el README | Se levanta todo y el guion de demo completo funciona |
+| ms-admin-rabbit (22-nov) | Con JWT: crear cola, exchange y binding, ver el binding en la API de RabbitMQ, y borrar los tres; sin token | 201/201/201, 204/204/204; 401 sin token. Sin cambios de código (regla del proyecto) |
+| Retomada (22-nov) | `./levantar.sh` compilando todo, luego alerta real, mensaje inválido → DLT, `FALLO_TEMPORAL` → DLQ, lag, ms-admin-rabbit | Todo OK; los únicos ERROR en logs son los provocados por esas pruebas |
 | Scripts | `./detener.sh` → `./levantar.sh` desde cero → smoke test → `./detener.sh` | Infra + 5 servicios + frontend en ~50 s (sin compilar) o ~10 min (compilando todo); todo se apaga sin procesos huérfanos |
 
 ---
@@ -63,7 +65,6 @@ No hay fallos conocidos en lo implementado. Pendientes y limitaciones:
 - **`VARIACION_VENTANA` con 2 instancias:** tras un rebalanceo, la ventana de un símbolo recién asignado puede tener un hueco (la referencia es el primer precio disponible dentro de la ventana). Documentado.
 - **Con precios reales las alertas de variación tardan** (1 % en 120 min puede no ocurrir). Para la demo: `--simulado`, o usar 0,05–0,1 % en 5 min.
 - **Pruebas mínimas:** solo `contextLoads` y los tests de reglas que pide la especificación (§10). El frontend no tiene tests unitarios.
-- **ms-admin-rabbit:** no se modificó (regla del proyecto). En esta entrega se comprobó que compila, pasa su test y arranca; sus endpoints no se volvieron a probar.
 - **Informe:** la especificación pide documentar en el informe por qué `precios.actualizados` retiene 24 h (reconstruir ventanas). El razonamiento está en el README ("Decisiones"); falta pasarlo al informe si hay uno aparte.
 
 ---
