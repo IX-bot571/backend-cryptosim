@@ -125,6 +125,8 @@ curl -s -H "Authorization: Bearer $TOKEN" localhost:8085/api/consumer-groups/ale
 ```
 (Devolver la retención a 7 días con `"604800000"`.)
 
+Lo mismo desde el frontend, pestaña **Admin Kafka**: clic en un tópico para ver particiones, líder e ISR y cambiar la retención o aumentar particiones; clic en `alertas-group` para ver sus miembros (con 2 instancias, el reparto 2 + 1) y el lag por partición, actualizado cada 5 s.
+
 **7. RabbitMQ sigue funcionando** — Cada alerta creada en el punto 3 envió una confirmación por `tareas.exchange` → `notificaciones.queue`: aparece en el log de ms-notificaciones ("Alerta creada: …"). Para el caso de DLQ, publicar un mensaje con fallo temporal forzado:
 ```bash
 curl -s -u guest:guest -H 'content-type: application/json' \
