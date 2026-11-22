@@ -10,4 +10,9 @@ public interface ReglaAlerta {
     TipoAlerta tipo();
 
     boolean cumple(Alerta alerta, PrecioEvent precio);
+
+    /** Texto extra para el mensaje de disparo (null = solo el precio). */
+    default String detalle(Alerta alerta, PrecioEvent precio) {
+        return null;
+    }
 }

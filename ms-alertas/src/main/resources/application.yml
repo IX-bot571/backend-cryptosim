@@ -21,6 +21,12 @@ spring:
     hibernate:
       ddl-auto: update
     open-in-view: false
+    defer-datasource-initialization: true   # el script de ajustes corre después de que Hibernate cree/actualice
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:db/ajustes-esquema.sql
+      separator: "@@"                       # el script tiene un bloque DO $$ ... $$ con ';' internos
   kafka:
     bootstrap-servers: localhost:9092,localhost:9093,localhost:9094
     client-id: ms-alertas
@@ -81,6 +87,8 @@ app:
         min-insync-replicas: 2
         retencion-ms: 604800000          # 7 días
         cleanup-policy: delete
+  ventana:
+    max-minutos: 1440                  # VARIACION_VENTANA: no más que la retención de precios.actualizados (24 h)
   demo:
     fallo-transitorio:                 # gancho de prueba para mostrar reintentos (vacío = desactivado)
       simbolo: ""

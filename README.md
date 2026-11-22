@@ -97,6 +97,8 @@ Con la infraestructura, los 4 servicios principales y el frontend arriba. Para e
 
 **3. Alerta que se dispara** — En *Mis alertas* elegir BTC, tipo "≥", pulsar **usar** (pone el precio actual) y subirlo un poco (o elegir "≤" y bajarlo un poco). Al cruzar, la alerta pasa a DISPARADA y aparece en *Notificaciones*. En Kafka-UI, el evento está en `alertas.disparadas`. En el log de ms-notificaciones aparece la notificación.
 
+*Extra — alerta por variación en una ventana:* en *Mis alertas* elegir "Variación % en una ventana de tiempo", ETH, "Sube o baja", 0,05 % y 2 min. Con el modo simulado se dispara en segundos y el mensaje dice si subió o bajó y desde qué precio. Si se reinicia ms-alertas con una alerta así activa, el log muestra `Ventana reconstruida … precios=N`: relee `precios.actualizados` desde (ahora − ventana) antes de arrancar el listener.
+
 **4. Mensaje inválido → DLT**
 ```bash
 docker exec -i kafka1 kafka-console-producer --bootstrap-server kafka1:29092 \
@@ -144,4 +146,6 @@ docker compose -f infra/kafka/docker-compose.yml down
 - **Retención 24 h** en `precios.actualizados`: permite reconstruir ventanas de tiempo releyendo el tópico (base del extra `VARIACION_VENTANA`).
 - **Disparo idempotente**: `UPDATE … WHERE estado='ACTIVA'`; el evento se publica solo si cambió exactamente una fila, así un precio reprocesado no duplica el aviso.
 - **Payload inválido no se reintenta** (va directo al DLT, §6 de la especificación); los fallos transitorios sí (3 reintentos, 1-2-4 s).
+- **VARIACION_VENTANA**: la ventana de precios vive en memoria (por símbolo, solo lo que cubre la ventana más larga activa). Al arrancar, ms-alertas la reconstruye releyendo `precios.actualizados` con `offsetsForTimes`, con un consumidor sin grupo que no toca los offsets de `alertas-group`; por eso `ventanaMinutos` tiene tope 1440 (retención de 24 h). Con 2 instancias, cada una evalúa los símbolos de sus particiones; tras un rebalanceo, la ventana de un símbolo recién recibido puede tener un hueco y la referencia sería el primer precio disponible dentro de la ventana.
+- **Ajustes de esquema**: `ddl-auto: update` no modifica restricciones existentes. `ms-alertas/src/main/resources/db/ajustes-esquema.sql` (idempotente, corre en cada arranque después de Hibernate) amplía el `CHECK` de `tipo` y quita el `NOT NULL` de `valor`.
 - Si la publicación a Kafka falla *después* de guardar la alerta como DISPARADA, ese evento se pierde. Se resolvería con un patrón *outbox*; queda fuera del alcance.

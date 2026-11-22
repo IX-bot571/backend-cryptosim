@@ -13,7 +13,11 @@ import java.util.List;
 /** Catálogo y nombres de Kafka (tópicos, grupos) leídos de application.yml. Ninguna clase los escribe a mano. */
 @Validated
 @ConfigurationProperties(prefix = "app")
-public record AppProperties(@NotEmpty List<@Valid Cripto> catalogo, @NotNull @Valid Kafka kafka) {
+public record AppProperties(@NotEmpty List<@Valid Cripto> catalogo, @NotNull @Valid Kafka kafka,
+                            @NotNull @Valid Ventana ventana) {
+
+    /** Límite de ventanaMinutos en VARIACION_VENTANA (no más que la retención de precios.actualizados). */
+    public record Ventana(@Positive int maxMinutos) {}
 
     public record Cripto(@NotBlank String simbolo, @NotBlank String nombre) {}
 

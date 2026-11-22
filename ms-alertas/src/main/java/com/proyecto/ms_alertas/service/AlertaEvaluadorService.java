@@ -11,6 +11,7 @@ import com.proyecto.ms_alertas.repository.AlertaRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.EnumMap;
 import java.util.List;
@@ -27,31 +28,43 @@ public class AlertaEvaluadorService {
     private final AlertaRepository repository;
     private final AlertaDisparadaPublisher publisher;
     private final FalloTransitorioSimulado falloSimulado;
+    private final VentanaPrecios ventana;
     private final Map<TipoAlerta, ReglaAlerta> reglas = new EnumMap<>(TipoAlerta.class);
 
     public AlertaEvaluadorService(AlertaRepository repository, AlertaDisparadaPublisher publisher,
-                                  FalloTransitorioSimulado falloSimulado, List<ReglaAlerta> reglas) {
+                                  FalloTransitorioSimulado falloSimulado, VentanaPrecios ventana,
+                                  List<ReglaAlerta> reglas) {
         this.repository = repository;
         this.publisher = publisher;
         this.falloSimulado = falloSimulado;
+        this.ventana = ventana;
         reglas.forEach(r -> this.reglas.put(r.tipo(), r));
     }
 
     public void evaluar(PrecioEvent precio) {
         falloSimulado.quizasFallar(precio.simbolo());
-        for (Alerta alerta : repository.findBySimboloAndEstado(precio.simbolo(), EstadoAlerta.ACTIVA)) {
+        List<Alerta> activas = repository.findBySimboloAndEstado(precio.simbolo(), EstadoAlerta.ACTIVA);
+        // Se registra antes de evaluar; se retiene solo la ventana más larga activa de este símbolo.
+        ventana.registrar(precio.simbolo(), precio.timestamp(), precio.precio(), ventanaMasLarga(activas));
+        for (Alerta alerta : activas) {
             ReglaAlerta regla = reglas.get(alerta.getTipo());
             if (regla == null) {
                 log.warn("Sin regla para el tipo {} (alerta id={})", alerta.getTipo(), alerta.getId());
                 continue;
             }
             if (regla.cumple(alerta, precio)) {
-                disparar(alerta, precio);
+                disparar(alerta, precio, regla.detalle(alerta, precio));
             }
         }
     }
 
-    private void disparar(Alerta alerta, PrecioEvent precio) {
+    static Duration ventanaMasLarga(List<Alerta> alertas) {
+        return Duration.ofMinutes(alertas.stream()
+                .filter(a -> a.getTipo() == TipoAlerta.VARIACION_VENTANA && a.getVentanaMinutos() != null)
+                .mapToInt(Alerta::getVentanaMinutos).max().orElse(0));
+    }
+
+    private void disparar(Alerta alerta, PrecioEvent precio, String detalle) {
         Instant ahora = Instant.now();
         int filas = repository.marcarDisparada(alerta.getId(), precio.precio(), ahora,
                 EstadoAlerta.ACTIVA, EstadoAlerta.DISPARADA);
@@ -61,10 +74,11 @@ public class AlertaEvaluadorService {
             return;
         }
         String condicion = Descripciones.condicion(alerta);
-        String mensaje = condicion + " · precio " + precio.precio().stripTrailingZeros().toPlainString();
+        String mensaje = condicion + " · " + (detalle != null ? detalle
+                : "precio " + precio.precio().stripTrailingZeros().toPlainString());
         log.info("Alerta DISPARADA id={} usuario={} {}", alerta.getId(), alerta.getUsuarioId(), mensaje);
         // Se publica después de confirmar el UPDATE: si la transacción falla no sale ningún evento.
         publisher.publicar(new AlertaDisparadaEvent(alerta.getId(), alerta.getUsuarioId(), alerta.getSimbolo(),
-                alerta.getTipo().name(), alerta.getValor(), precio.precio(), ahora, mensaje));
+                alerta.getTipo().name(), Descripciones.objetivo(alerta), precio.precio(), ahora, mensaje));
     }
 }

@@ -17,7 +17,11 @@ public class PrecioConsumer {
     private final PrecioEventValidator validator;
     private final AlertaEvaluadorService evaluador;
 
-    @KafkaListener(topics = "${app.kafka.topics.precios.nombre}", groupId = "${app.kafka.groups.alertas}")
+    /** Id del contenedor: VentanaReplay lo arranca después de reconstruir la ventana (autoStartup=false). */
+    public static final String LISTENER_ID = "precios-listener";
+
+    @KafkaListener(id = LISTENER_ID, idIsGroup = false, autoStartup = "false",
+            topics = "${app.kafka.topics.precios.nombre}", groupId = "${app.kafka.groups.alertas}")
     public void recibir(ConsumerRecord<String, PrecioEvent> registro) {
         log.debug("Precio recibido topico={} particion={} offset={} clave={}",
                 registro.topic(), registro.partition(), registro.offset(), registro.key());

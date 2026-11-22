@@ -40,8 +40,21 @@ public class Alerta {
     @Column(nullable = false, length = 30)
     private TipoAlerta tipo;
 
-    @Column(nullable = false, precision = 24, scale = 8)
+    /** Precio objetivo de PRECIO_MAYOR_IGUAL / PRECIO_MENOR_IGUAL. Null en VARIACION_VENTANA. */
+    @Column(precision = 24, scale = 8)
     private BigDecimal valor;
+
+    // --- Solo VARIACION_VENTANA: "avísame si <simbolo> <direccion> <porcentaje>% en <ventanaMinutos> min" ---
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 10)
+    private Direccion direccion;
+
+    /** Siempre positivo; la dirección indica el signo. */
+    @Column(precision = 10, scale = 4)
+    private BigDecimal porcentaje;
+
+    private Integer ventanaMinutos;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)

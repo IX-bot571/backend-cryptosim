@@ -33,6 +33,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(Map.of("error", "Parámetro inválido: " + e.getName()));
     }
 
+    @ExceptionHandler(AlertaInvalidaException.class)
+    ResponseEntity<Map<String, Object>> alertaInvalida(AlertaInvalidaException e) {
+        return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+    }
+
     @ExceptionHandler(SimboloNoValidoException.class)
     ResponseEntity<Map<String, Object>> simbolo(SimboloNoValidoException e) {
         return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));

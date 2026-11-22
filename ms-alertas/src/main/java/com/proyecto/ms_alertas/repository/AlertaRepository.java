@@ -2,6 +2,7 @@ package com.proyecto.ms_alertas.repository;
 
 import com.proyecto.ms_alertas.entity.Alerta;
 import com.proyecto.ms_alertas.entity.EstadoAlerta;
+import com.proyecto.ms_alertas.entity.TipoAlerta;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -22,6 +23,10 @@ public interface AlertaRepository extends JpaRepository<Alerta, Long> {
     List<Alerta> findByUsuarioIdAndEstadoOrderByCreadaEnDesc(String usuarioId, EstadoAlerta estado);
 
     Optional<Alerta> findByIdAndUsuarioId(Long id, String usuarioId);
+
+    /** Ventana más larga entre las alertas activas de un tipo (null si no hay ninguna). */
+    @Query("select max(a.ventanaMinutos) from Alerta a where a.tipo = :tipo and a.estado = :estado")
+    Integer maxVentanaMinutos(@Param("tipo") TipoAlerta tipo, @Param("estado") EstadoAlerta estado);
 
     /**
      * Disparo idempotente: solo cambia la fila si sigue ACTIVA. Devuelve 1 si esta llamada la disparó y 0 si

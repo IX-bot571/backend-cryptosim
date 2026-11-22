@@ -72,6 +72,8 @@ record AlertaDisparadaEvent(Long alertaId, String usuarioId, String simbolo, Str
                             BigDecimal valorObjetivo, BigDecimal precioDisparo,
                             Instant timestamp, String mensaje) {}
 ```
+En `AlertaDisparadaEvent`, `valorObjetivo` es el precio objetivo o, si `tipo` es `VARIACION_VENTANA`, el porcentaje.
+
 Validación al consumir `PrecioEvent`: `simbolo` no vacío y dentro del catálogo, `precio` > 0, `timestamp` presente.
 Validación al consumir `AlertaDisparadaEvent`: `alertaId`, `usuarioId`, `simbolo` y `timestamp` presentes, `precioDisparo` > 0.
 
@@ -110,13 +112,22 @@ record NotificacionMensaje(Long referenciaId /* id de la alerta */, String usuar
 | PUT | `/api/seguimiento` | `{simbolos: [..]}` → reemplaza la lista |
 
 ```java
-record AlertaRequest(@NotBlank String simbolo, @NotNull TipoAlerta tipo, @NotNull @Positive BigDecimal valor) {}
+record AlertaRequest(@NotBlank String simbolo, @NotNull TipoAlerta tipo, @Positive BigDecimal valor,
+                     Direccion direccion, @Positive BigDecimal porcentaje, @Min(1) Integer ventanaMinutos) {}
 record AlertaResponse(Long id, String simbolo, TipoAlerta tipo, BigDecimal valor, EstadoAlerta estado,
-                      Instant creadaEn, Instant disparadaEn, BigDecimal precioDisparo) {}
-enum TipoAlerta  { PRECIO_MAYOR_IGUAL, PRECIO_MENOR_IGUAL }
+                      Instant creadaEn, Instant disparadaEn, BigDecimal precioDisparo,
+                      Direccion direccion, BigDecimal porcentaje, Integer ventanaMinutos) {}
+enum TipoAlerta   { PRECIO_MAYOR_IGUAL, PRECIO_MENOR_IGUAL, VARIACION_VENTANA }
+enum Direccion    { SUBE, BAJA, AMBAS }
 enum EstadoAlerta { ACTIVA, DISPARADA, CANCELADA }
 ```
-Errores: 400 con detalle de validación (incluye símbolo fuera del catálogo).
+Campos por tipo:
+- `PRECIO_MAYOR_IGUAL` / `PRECIO_MENOR_IGUAL`: `valor` (precio objetivo) obligatorio.
+- `VARIACION_VENTANA`: `direccion`, `porcentaje` (> 0) y `ventanaMinutos` (1–1440, la retención de `precios.actualizados`) obligatorios; `valor` queda null.
+  Ejemplo: `{"simbolo":"BTC","tipo":"VARIACION_VENTANA","direccion":"SUBE","porcentaje":1,"ventanaMinutos":120}`.
+  Regla: `variacion = (actual − referencia) / referencia × 100`, con referencia = primer precio con timestamp ≥ ahora − ventana. SUBE: `variacion ≥ +p`; BAJA: `variacion ≤ −p`; AMBAS: `|variacion| ≥ p` (se dispara una vez y el mensaje dice si subió o bajó).
+
+Errores: 400 con detalle de validación (incluye símbolo fuera del catálogo y campos que no corresponden al tipo).
 
 ### ms-admin-kafka (8085)
 | Método | Ruta | Cuerpo / respuesta |

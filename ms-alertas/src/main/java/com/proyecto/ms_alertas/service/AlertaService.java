@@ -1,5 +1,8 @@
 package com.proyecto.ms_alertas.service;
 
+import com.proyecto.ms_alertas.config.AppProperties;
+import com.proyecto.ms_alertas.entity.TipoAlerta;
+import com.proyecto.ms_alertas.exception.AlertaInvalidaException;
 import com.proyecto.ms_alertas.dto.AlertaRequest;
 import com.proyecto.ms_alertas.dto.AlertaResponse;
 import com.proyecto.ms_alertas.dto.NotificacionMensaje;
@@ -24,16 +27,34 @@ public class AlertaService {
     private final AlertaRepository repository;
     private final CatalogoService catalogo;
     private final NotificacionProducer notificacionProducer;
+    private final AppProperties props;
 
     public AlertaResponse crear(String usuarioId, AlertaRequest request) {
         Alerta a = new Alerta();
         a.setUsuarioId(usuarioId);
         a.setSimbolo(catalogo.validar(request.simbolo()));
         a.setTipo(request.tipo());
-        a.setValor(request.valor());
+        if (request.tipo() == TipoAlerta.VARIACION_VENTANA) {
+            int max = props.ventana().maxMinutos();
+            if (request.direccion() == null || request.porcentaje() == null || request.ventanaMinutos() == null) {
+                throw new AlertaInvalidaException("VARIACION_VENTANA requiere direccion, porcentaje y ventanaMinutos");
+            }
+            if (request.ventanaMinutos() > max) {
+                throw new AlertaInvalidaException("ventanaMinutos no puede superar " + max
+                        + " (retención de precios.actualizados)");
+            }
+            a.setDireccion(request.direccion());
+            a.setPorcentaje(request.porcentaje());
+            a.setVentanaMinutos(request.ventanaMinutos());
+        } else {
+            if (request.valor() == null) {
+                throw new AlertaInvalidaException(request.tipo() + " requiere valor");
+            }
+            a.setValor(request.valor());
+        }
         Alerta guardada = repository.save(a);
-        log.info("Alerta creada id={} usuario={} {} {} {}", guardada.getId(), usuarioId,
-                guardada.getSimbolo(), guardada.getTipo(), guardada.getValor());
+        log.info("Alerta creada id={} usuario={} tipo={} {}", guardada.getId(), usuarioId,
+                guardada.getTipo(), Descripciones.condicion(guardada));
         // Flujo RabbitMQ existente: confirmación de alerta creada → notificaciones.queue
         notificacionProducer.enviar(new NotificacionMensaje(guardada.getId(), usuarioId,
                 "Alerta creada: " + Descripciones.condicion(guardada)));
